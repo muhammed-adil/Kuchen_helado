@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Cart | KUCHEN HELADO</title>
+  <style>
+    *{box-sizing:border-box}
+    body{font-family:'Poppins',sans-serif;background:#f8f5f0;color:#3b2f2f;margin:0;padding:0}
+    header{background:#d4b48c;padding:1rem 2rem;display:flex;justify-content:space-between;align-items:center}
+    header h1{font-size:1.2rem}
+    .container{max-width:980px;margin:2rem auto;padding:1rem}
+    table{width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 6px 16px rgba(0,0,0,0.06)}
+    th,td{padding:0.9rem;text-align:left;border-bottom:1px solid #eee}
+    th{background:#f7f2ec}
+    /* animated rows */
+    #cartTable tbody tr{transition: transform 320ms ease, opacity 320ms ease, height 320ms ease; transform: translateY(8px); opacity:0}
+    #cartTable tbody tr.enter{transform:none; opacity:1}
+    #cartTable tbody tr.removing{opacity:0; transform:translateX(20px); height:0; padding:0; margin:0}
+    .qty {display:flex;align-items:center;gap:8px}
+    .qty button{padding:6px 10px;border-radius:6px;border:1px solid #ddd;background:#fff;cursor:pointer}
+    .summary{margin-top:1rem;text-align:right}
+    .btn{background:#3b2f2f;color:#fff;padding:0.7rem 1.1rem;border-radius:8px;border:none;cursor:pointer}
+    .btn.secondary{background:#d4b48c;color:#3b2f2f}
+    @media(max-width:700px){table,thead,tbody,tr,th,td{display:block}th{display:none}td{border:none;padding:0.8rem 0}td:before{content:attr(data-label);font-weight:700;display:block;margin-bottom:6px}}
+    footer{background:#3b2f2f;color:#fff;text-align:center;padding:1rem;margin-top:2rem}
+  </style>
+  </head>
+<body>
+  <header>
+    <h1>KUCHEN HELADO</h1>
+    <nav>
+      <a href="KUCHEN_HELADO.html" style="margin-right:12px;color:#3b2f2f;text-decoration:none;font-weight:600">Continue Shopping</a>
+      <a href="login.html" style="color:#3b2f2f;text-decoration:none;font-weight:600">Login</a>
+    </nav>
+  </header>
+
+  <div class="container">
+    <h2>Your Cart</h2>
+    <div id="emptyMsg" style="background:#fff;padding:1rem;border-radius:8px;box-shadow:0 6px 16px rgba(0,0,0,0.04);">Loading cart...</div>
+    <div id="cartArea" style="display:none">
+      <table id="cartTable">
+        <thead>
+          <tr><th>Item</th><th>Price</th><th>Quantity</th><th>Subtotal</th><th></th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div class="summary">
+        <div style="margin-top:0.8rem">Total: <strong id="total">₹0</strong></div>
+        <div style="margin-top:1rem">
+          <button id="checkout" class="btn">Checkout</button>
+          <button id="clearCart" class="btn secondary">Clear Cart</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>&copy; 2025 KUCHEN HELADO | All Rights Reserved<span class="trademark">Batch12™</span></p>
+  </footer>
+
+  <script>
+    (function(){
+  const CART_KEY = 'kuchenCart';
+  const STORAGE = (function(){ try{ localStorage.setItem('__ktest','1'); localStorage.removeItem('__ktest'); return localStorage; }catch(e){ try{ sessionStorage.setItem('__ktest','1'); sessionStorage.removeItem('__ktest'); return sessionStorage; }catch(e){ return null; } } })();
+  if (!STORAGE) window._kuchenCart = window._kuchenCart || [];
+  function readCart(){ try { if (STORAGE) return JSON.parse(STORAGE.getItem(CART_KEY) || '[]'); return window._kuchenCart || []; } catch(e){ return []; } }
+  function writeCart(cart){ try{ if (STORAGE) STORAGE.setItem(CART_KEY, JSON.stringify(cart)); else window._kuchenCart = cart; }catch(e){ window._kuchenCart = cart; } render(); }
+      function render(){
+        const cart = readCart();
+        const emptyMsg = document.getElementById('emptyMsg');
+        const cartArea = document.getElementById('cartArea');
+        const tbody = document.querySelector('#cartTable tbody');
+        tbody.innerHTML = '';
+        if (!cart || cart.length === 0){ emptyMsg.textContent = 'Your cart is empty.'; cartArea.style.display='none'; emptyMsg.style.display='block'; return; }
+        emptyMsg.style.display='none'; cartArea.style.display='block';
+        let total = 0;
+        cart.forEach(item=>{
+          const tr = document.createElement('tr');
+          const subtotal = (item.price * item.qty) || 0; total += subtotal;
+          tr.innerHTML = `<td data-label="Item">${item.name}</td>
+                          <td data-label="Price">₹${item.price.toFixed(2)}</td>
+                          <td data-label="Quantity"><div class="qty"><button class="dec">-</button><span>${item.qty}</span><button class="inc">+</button></div></td>
+                          <td data-label="Subtotal">₹${subtotal.toFixed(2)}</td>
+                          <td><button class="remove">Remove</button></td>`;
+          // attach handlers with animations
+          tr.querySelector('.inc').addEventListener('click',()=>{ item.qty+=1; writeCart(cart); });
+          tr.querySelector('.dec').addEventListener('click',()=>{ if (item.qty>1){ item.qty-=1; writeCart(cart); } else { // animate remove then delete
+            const idx = cart.findIndex(i=>i.id===item.id); if (idx>-1) { tr.classList.add('removing'); setTimeout(()=>{ cart.splice(idx,1); writeCart(cart); }, 300); } }
+          });
+          tr.querySelector('.remove').addEventListener('click',()=>{ const idx = cart.findIndex(i=>i.id===item.id); if (idx>-1){ tr.classList.add('removing'); setTimeout(()=>{ cart.splice(idx,1); writeCart(cart); }, 300); } });
+          tbody.appendChild(tr);
+          // trigger enter animation
+          requestAnimationFrame(()=>{ tr.classList.add('enter'); });
+        });
+        document.getElementById('total').textContent = '₹' + total.toFixed(2);
+      }
+      document.getElementById('checkout').addEventListener('click',()=>{
+        location.href = 'payment.html';
+      });
+      document.getElementById('clearCart').addEventListener('click',()=>{ localStorage.removeItem(CART_KEY); render(); });
+      render();
+    })();
+  </script>
+</body>
+</html>

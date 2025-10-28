@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Payment Success | KUCHEN HELADO</title>
+  <style>
+    body{font-family:'Poppins',sans-serif;background:#f8f5f0;color:#3b2f2f;margin:0}
+    header{background:#d4b48c;padding:1rem 2rem;display:flex;justify-content:space-between;align-items:center}
+    .wrap{max-width:900px;margin:2rem auto;padding:1rem}
+    .card{background:#fff;padding:1.2rem;border-radius:10px;box-shadow:0 8px 20px rgba(0,0,0,0.06);position:relative;overflow:visible}
+    .success{color:green;font-weight:700;font-size:1.2rem;transform:scale(.96);opacity:0;animation:popIn 420ms cubic-bezier(.2,.9,.3,1) forwards}
+    .items{margin-top:1rem}
+    .items div{padding:0.5rem 0;border-bottom:1px solid #eee;opacity:0;transform:translateY(8px);animation:fadeUp 420ms ease forwards}
+    .meta{color:#666;font-size:0.95rem}
+    .btn{background:#3b2f2f;color:#fff;padding:0.6rem 1rem;border-radius:8px;border:none;cursor:pointer}
+    footer{background:#3b2f2f;color:#fff;text-align:center;padding:1rem;margin-top:2rem}
+    @keyframes popIn{to{transform:none;opacity:1}}
+    @keyframes fadeUp{to{opacity:1;transform:none}}
+    /* simple confetti */
+    .confetti{position:absolute;left:50%;top:18px;width:8px;height:12px;border-radius:2px;opacity:0.95;transform:translateX(-50%);animation:confettiFall 1400ms forwards ease-out}
+    @keyframes confettiFall{0%{transform:translateY(0) rotate(0);}50%{opacity:1}100%{transform:translateY(220px) rotate(180deg);opacity:1}}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>KUCHEN HELADO</h1>
+    <nav>
+      <a href="KUCHEN_HELADO.html" style="margin-right:12px;color:#3b2f2f;text-decoration:none;font-weight:600">Home</a>
+      <a href="cart.html" style="color:#3b2f2f;text-decoration:none;font-weight:600">Cart</a>
+    </nav>
+  </header>
+
+  <div class="wrap">
+    <div class="card">
+      <div class="success">Payment Succeeded ✓</div>
+      <p class="meta" id="orderMeta"></p>
+      <h3>Order Details</h3>
+      <div id="items" class="items"></div>
+      <div style="margin-top:1rem;text-align:right">Total Paid: <strong id="paid">₹0</strong></div>
+      <div style="margin-top:1rem;text-align:right">
+        <button id="backHome" class="btn">Back to Home</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>&copy; 2025 KUCHEN HELADO | All Rights Reserved<span class="trademark">Batch12™</span></p>
+  </footer>
+
+  <script>
+    (function(){
+      // Read last order from localStorage
+      let order = null;
+      try { order = JSON.parse(localStorage.getItem('kuchenLastOrder')); } catch(e) { order = null; }
+      const itemsEl = document.getElementById('items');
+      const metaEl = document.getElementById('orderMeta');
+      const paidEl = document.getElementById('paid');
+      if (!order) {
+        metaEl.textContent = 'No recent order found.';
+        itemsEl.innerHTML = '<p>Your order could not be located. If you just paid, try returning to the shop.</p>';
+      } else {
+        metaEl.textContent = `Order #${order.id} — ${new Date(order.date).toLocaleString()} — Paid by ${order.nameOnCard} (card •••• ${order.cardLast4})`;
+        itemsEl.innerHTML = '';
+        // staggered item animations
+        order.items.forEach((it, idx) => {
+          const div = document.createElement('div');
+          const subtotal = (it.price||0) * (it.qty||1);
+          div.textContent = `${it.name} x${it.qty} — ₹${subtotal.toFixed(2)}`;
+          div.style.animationDelay = (idx * 80) + 'ms';
+          itemsEl.appendChild(div);
+        });
+        paidEl.textContent = '₹' + (order.total||0).toFixed(2);
+
+        // create lightweight confetti for celebration
+        const colors = ['#f94144','#f3722c','#f9c74f','#90be6d','#577590'];
+        const cardEl = document.querySelector('.card');
+        for (let i=0;i<12;i++){
+          const c = document.createElement('div');
+          c.className = 'confetti';
+          c.style.background = colors[i % colors.length];
+          // spread horizontally
+          const left = 20 + Math.round(Math.random() * 60);
+          c.style.left = left + '%';
+          c.style.top = (10 + Math.round(Math.random()*20)) + 'px';
+          c.style.animationDelay = (Math.random()*200) + 'ms';
+          c.style.transform = `translateX(-50%) rotate(${Math.random()*360}deg)`;
+          if (cardEl) cardEl.appendChild(c);
+          // remove after animation
+          setTimeout(()=>{ if (c && c.parentNode) c.parentNode.removeChild(c); }, 1700);
+        }
+      }
+
+      document.getElementById('backHome').addEventListener('click',()=>{ location.href = 'KUCHEN_HELADO.html#home'; });
+    })();
+  </script>
+</body>
+</html>

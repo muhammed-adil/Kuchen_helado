@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Payment | KUCHEN HELADO</title>
+  <style>
+    body{font-family:'Poppins',sans-serif;background:#f8f5f0;color:#3b2f2f;margin:0}
+    header{background:#d4b48c;padding:1rem 2rem;display:flex;justify-content:space-between;align-items:center}
+    .wrap{max-width:920px;margin:2rem auto;padding:1rem}
+    .grid{display:grid;grid-template-columns:1fr 360px;gap:1.2rem}
+    .card{background:#fff;padding:1rem;border-radius:10px;box-shadow:0 8px 20px rgba(0,0,0,0.06); transform:translateY(6px); opacity:0; animation: cardIn 420ms ease forwards 120ms}
+    label{display:block;margin:0.6rem 0 0.3rem;font-weight:600}
+    input{width:100%;padding:0.7rem;border:1px solid #e6ddd2;border-radius:8px}
+    .btn{background:#3b2f2f;color:#fff;padding:0.7rem 1.1rem;border-radius:8px;border:none;cursor:pointer;position:relative}
+    .btn.loading{pointer-events:none;opacity:0.9}
+    .btn.loading::after{content:'';position:absolute;right:14px;top:50%;width:14px;height:14px;margin-top:-7px;border-radius:50%;border:2px solid rgba(255,255,255,0.6);border-top-color:transparent;animation:spin 800ms linear infinite}
+    footer{background:#3b2f2f;color:#fff;text-align:center;padding:1rem;margin-top:2rem}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    @keyframes cardIn{to{transform:none;opacity:1}}
+    @media(max-width:900px){.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>KUCHEN HELADO</h1>
+    <nav>
+      <a href="cart.html" style="margin-right:12px;color:#3b2f2f;text-decoration:none;font-weight:600">Back to Cart</a>
+      <a href="KUCHEN_HELADO.html" style="color:#3b2f2f;text-decoration:none;font-weight:600">Home</a>
+    </nav>
+  </header>
+
+  <div class="wrap">
+    <h2>Payment</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>Payment Details</h3>
+        <form id="paymentForm">
+          <label for="name">Name on Card</label>
+          <input id="name" required placeholder="Full name" />
+          <label for="card">Card Number</label>
+          <input id="card" maxlength="19" placeholder="xxxx xxxx xxxx xxxx" />
+          <div style="display:flex;gap:8px;margin-top:6px">
+            <div style="flex:1">
+              <label for="exp">Expiry</label>
+              <input id="exp" placeholder="MM/YY" />
+            </div>
+            <div style="width:110px">
+              <label for="cvv">CVV</label>
+              <input id="cvv" maxlength="4" placeholder="123" />
+            </div>
+          </div>
+          <div style="margin-top:1rem">
+            <button class="btn" type="submit">Pay Now (Demo)</button>
+          </div>
+        </form>
+        <p style="font-size:0.9rem;color:#666;margin-top:0.8rem">This is a demo payment page. No real payment is processed.</p>
+      </div>
+
+      <div class="card" id="orderSummary">
+        <h3>Order Summary</h3>
+        <div id="items"></div>
+        <div style="margin-top:1rem">Total: <strong id="orderTotal">₹0</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>&copy; 2025 KUCHEN HELADO | All Rights Reserved<span class="trademark">Batch12™</span></p>
+  </footer>
+
+  <script>
+    (function(){
+  const CART_KEY = 'kuchenCart';
+  const STORAGE = (function(){ try{ localStorage.setItem('__ktest','1'); localStorage.removeItem('__ktest'); return localStorage; }catch(e){ try{ sessionStorage.setItem('__ktest','1'); sessionStorage.removeItem('__ktest'); return sessionStorage; }catch(e){ return null; } } })();
+  if (!STORAGE) window._kuchenCart = window._kuchenCart || [];
+  function readCart(){ try { if (STORAGE) return JSON.parse(STORAGE.getItem(CART_KEY) || '[]'); return window._kuchenCart || []; } catch(e){ return []; } }
+  function clearCart(){ try{ if (STORAGE) STORAGE.removeItem(CART_KEY); else window._kuchenCart = []; }catch(e){ window._kuchenCart = []; } }
+      function renderSummary(){
+        const cart = readCart();
+        const itemsEl = document.getElementById('items'); itemsEl.innerHTML = '';
+        let total = 0;
+        if (!cart || cart.length===0){ itemsEl.innerHTML = '<p>Your cart is empty.</p>'; document.getElementById('orderTotal').textContent='₹0'; return; }
+        cart.forEach(it=>{ const s = document.createElement('div'); const sub = (it.price*it.qty)||0; total+=sub; s.textContent = `${it.name} x${it.qty} — ₹${sub.toFixed(2)}`; itemsEl.appendChild(s); });
+        document.getElementById('orderTotal').textContent = '₹' + total.toFixed(2);
+      }
+      const payBtn = document.querySelector('#paymentForm .btn');
+      document.getElementById('paymentForm').addEventListener('submit', function(e){
+        e.preventDefault();
+        // simple validation
+        const name = document.getElementById('name').value.trim();
+        const card = document.getElementById('card').value.replace(/\s+/g,'');
+        const exp = document.getElementById('exp').value.trim();
+        const cvv = document.getElementById('cvv').value.trim();
+        if (!name || card.length < 12 || !exp || cvv.length < 3) { alert('Please complete the payment details (demo validation).'); return; }
+
+        // Build demo order from cart
+        const cart = readCart();
+        if (!cart || cart.length === 0) { alert('Your cart is empty.'); location.href = 'cart.html'; return; }
+        const orderTotal = cart.reduce((s,i)=>s + ((i.price||0) * (i.qty||1)), 0);
+        const order = {
+          id: 'ORD-' + Date.now(),
+          date: new Date().toISOString(),
+          nameOnCard: name,
+          cardLast4: card.slice(-4),
+          items: cart,
+          total: orderTotal
+        };
+
+        // show loading state briefly for premium feel
+        if (payBtn) { payBtn.classList.add('loading'); payBtn.disabled = true; }
+        setTimeout(()=>{
+          try { localStorage.setItem('kuchenLastOrder', JSON.stringify(order)); } catch(e) { /* ignore */ }
+          // clear cart and redirect to success page which will read last order
+          clearCart();
+          location.href = 'payment-success.html';
+        }, 700);
+      });
+      renderSummary();
+    })();
+  </script>
+</body>
+</html>
